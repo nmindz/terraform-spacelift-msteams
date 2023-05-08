@@ -129,7 +129,7 @@ run_facts[{ "name": "Space", "value": value }] {
     value := input.run_updated.stack.space.name
 }
 
-run_facts[{"title": "Waiting Review", "value": value}] {
+run_facts[{ "name": "Waiting Review", "value": value }] {
 	interesting_review_flags
 	all_flags := [flag |
 		receipt := input.run_updated.policy_receipts[_]
