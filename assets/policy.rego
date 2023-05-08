@@ -16,6 +16,19 @@ run_url = sprintf("%s/run/%s", [
     input.run_updated.run.id,
 ])
 
+review_flags_mentionable[sprintf(message, [])] {
+	# Basically extracts flags, one by one
+	policy_receipts := input.run_updated.policy_receipts[_].flags[_]
+	flag := strings.any_prefix_match(policy_receipts.flags[_], "review:")
+	message := sprintf("%s", [flag])
+}
+
+prefix_mention_flag(f) = concat("", ["@", f])
+
+interesting_review_flags {
+	strings.any_prefix_match(input.run_updated.policy_receipts[_].flags[_], "review:")
+}
+
 interesting_run_states = {
     "DISCARDED": { "color": fail_color, "title": "has been discarded" },
     "FAILED": { "color": fail_color, "title": "has failed" },
@@ -116,6 +129,17 @@ run_facts[{ "name": "Space", "value": value }] {
     value := input.run_updated.stack.space.name
 }
 
+run_facts[{ "name": "Waiting Review", "value": value }] {
+	interesting_review_flags
+	all_flags := [flag |
+		receipt := input.run_updated.policy_receipts[_]
+		flag := receipt.flags[_]
+		startswith(flag, "review:")
+	]
+	result := [prefix_mention_flag(trim_prefix(flag, "review:")) | flag := all_flags[_]]
+	value := concat(" ", result)
+}
+
 resources(type) = [change.entity.address |
     change := input.run_updated.run.changes[_]
     change.phase == "plan"
@@ -129,7 +153,7 @@ as_html_list(resources) = sprintf("<ul>%s</ul>", [
 
 
 # START module version state changes.
-module_url := sprintf("https://%s.app.spacelift.io/module/%s", [
+module_url := sprintf("https://%s.spacelift.io/module/%s", [
     input.account.name,
     input.module_version.module.id,
 ])
